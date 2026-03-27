@@ -24,6 +24,13 @@ AudioPlayer.prototype.bind = function(method) {
 	);
 }
 
+function setButtonDisabled(buttonId, disabled) {
+	var button = document.getElementById(buttonId);
+	if (button) {
+		button.disabled = !!disabled;
+	}
+}
+
 
 /**
  * Creates an instance of the class AudioPlayer.
@@ -34,7 +41,8 @@ AudioPlayer.prototype.bind = function(method) {
  */ 
 function AudioPlayer() {
 	// Get the Audio Context from the browser (WebAudioAPI must be supported therefore)
-	this.audioContext = new webkitAudioContext();	
+	var AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+	this.audioContext = AudioContextCtor ? new AudioContextCtor() : null;
 	this.audioAnalyzer;
 	this.audioProcessor;
 	this.audioSource;
@@ -51,6 +59,12 @@ function AudioPlayer() {
 	this.canvas;
 	this.canvasCtx;
 	this.stopRendering = false;
+
+	if (!this.audioContext) {
+		console.error("Web Audio API is not supported in this browser.");
+		setButtonDisabled("btnPlay", true);
+		setButtonDisabled("btnStop", true);
+	}
 }
 
 /**
@@ -59,6 +73,10 @@ function AudioPlayer() {
  * @this{AudioPlayer} 
  */
 AudioPlayer.prototype.loadSampleAudio = function() {
+	if (!this.audioContext) {
+		return;
+	}
+
 	console.log("Loading sample audio file ...");
 
 	// Load the sample file
@@ -72,12 +90,15 @@ AudioPlayer.prototype.loadSampleAudio = function() {
  * @param {string} url The URL to the *.mp3 file
  */
 AudioPlayer.prototype.loadFromURL = function(url) {
-	console.log("Loading Auio File from: " + url);
+	if (!this.audioContext) {
+		return;
+	}
+
+	console.log("Loading Audio File from: " + url);
 
 	// Disable the buttons
-	$("#btnPlay").attr("disabled", true);
-	$("#btnStop").attr("disabled", true);
-	//$("#btnLoad").attr("disabled", true);
+	setButtonDisabled("btnPlay", true);
+	setButtonDisabled("btnStop", true);
 	
 	// Save my instance for the callback
 	var myself = this;
@@ -90,9 +111,17 @@ AudioPlayer.prototype.loadFromURL = function(url) {
 
     // function called once data is loaded
     request.onload = function(){
+		if (request.status !== 200 && request.status !== 0) {
+			console.error("Audio request failed with status " + request.status + " for " + url);
+			return;
+		}
         // Initialize the audiobuffer
        myself.initAudioBuffer(request.response);
     }
+
+	request.onerror = function() {
+		console.error("Audio request failed for " + url);
+	};
 
     request.send();	// Start the request
 }
@@ -104,33 +133,51 @@ AudioPlayer.prototype.loadFromURL = function(url) {
  * @param {arraybuffer} data can be an arraybuffer from an XMLHttpRequest or an already decoded buffer array 
  */
 AudioPlayer.prototype.initAudioBuffer = function(data) {
+	if (!this.audioContext) {
+		return;
+	}
+
 	// Save my instance
 	var myself = this;
 
-	if(this.audioContext.decodeAudioData) {
-		this.audioContext.decodeAudioData(data, function(buffer) {
-			myself.audioBuffer = buffer;
-			myself.addBufferToSource(myself.audioBuffer);
-			//myself.audioSource.buffer = buffer;
-			myself.createAudio();
-		}, function(e) {
-			console.log(e);
-			//$('#loading').text("cannot decode mp3");
-		});
-	} else {
-		this.audioBuffer = this.audioContext.createBuffer(data, false);
-		//this.audioSource.buffer = this.audioContext.createBuffer(data, false );
-		this.addBufferToSource(this.audioBuffer);
-		this.createAudio();
+	if (!this.audioContext.decodeAudioData) {
+		console.error("decodeAudioData is not available in this browser.");
+		return;
 	}
+
+	var onDecoded = function(buffer) {
+		myself.audioBuffer = buffer;
+		myself.addBufferToSource(myself.audioBuffer);
+		myself.createAudio();
+	};
+
+	var onError = function(e) {
+		console.error("Could not decode audio data.", e);
+	};
+
+	// Newer browsers return a Promise, older implementations use callbacks.
+	try {
+		var decodePromise = this.audioContext.decodeAudioData(data);
+		if (decodePromise && typeof decodePromise.then === "function") {
+			decodePromise.then(onDecoded).catch(onError);
+			return;
+		}
+	} catch (promiseDecodeError) {
+		// Fall back to callback style below.
+	}
+
+	this.audioContext.decodeAudioData(data, onDecoded, onError);
 }
 
 
 AudioPlayer.prototype.addBufferToSource = function(buffer) {
+	if (!this.audioContext) {
+		return;
+	}
+
 	// Disable the buttons, because I am disabling all playing songs (if there are any ;))
-	$("#btnPlay").attr("disabled", true);
-	$("#btnStop").attr("disabled", true);
-	//$("#btnLoad").attr("disabled", true);
+	setButtonDisabled("btnPlay", true);
+	setButtonDisabled("btnStop", true);
 	
 	//clean up previous mp3
 	if (this.audioSource) this.audioSource.disconnect();
@@ -143,7 +190,7 @@ AudioPlayer.prototype.addBufferToSource = function(buffer) {
 	
 	console.log("Finished loading MP3-file");
 	
-	$("#btnPlay").attr("disabled", false);
+	setButtonDisabled("btnPlay", false);
 }
 
 /**
@@ -152,9 +199,17 @@ AudioPlayer.prototype.addBufferToSource = function(buffer) {
  * @this{AudioPlayer} 
  */
 AudioPlayer.prototype.createAudio = function() {	
+	if (!this.audioContext || !this.audioSource) {
+		return;
+	}
+
 	// Create the routing of the modules
-	this.audioProcessor = this.audioContext.createJavaScriptNode(2048 , 1 , 1 );
-	//this.audioProcessor.onaudioprocess = processAudio;
+	this.audioProcessor = null;
+	if (this.audioContext.createScriptProcessor) {
+		this.audioProcessor = this.audioContext.createScriptProcessor(2048, 1, 1);
+	} else if (this.audioContext.createJavaScriptNode) {
+		this.audioProcessor = this.audioContext.createJavaScriptNode(2048, 1, 1);
+	}
 
 	// Create an analyzer from the audio context
 	this.audioAnalyzer = this.audioContext.createAnalyser();
@@ -163,36 +218,68 @@ AudioPlayer.prototype.createAudio = function() {
 	// Initialize the frequency data array needed for the frequency analysis
 	this.freqByteData = new Uint8Array(this.audioAnalyzer.frequencyBinCount);
 
-	this.audioSource.connect(this.audioContext.destination);
 	this.audioSource.connect(this.audioAnalyzer);
+	this.audioSource.connect(this.audioContext.destination);
 
-	this.audioAnalyzer.connect(this.audioProcessor);
-	this.audioProcessor.connect(this.audioContext.destination);
+	if (this.audioProcessor) {
+		this.audioAnalyzer.connect(this.audioProcessor);
+		this.audioProcessor.connect(this.audioContext.destination);
+	}
+}
+
+AudioPlayer.prototype.startSource = function() {
+	if (!this.audioSource) {
+		return;
+	}
+
+	if (this.audioSource.start) {
+		this.audioSource.start(0);
+	} else if (this.audioSource.noteOn) {
+		this.audioSource.noteOn(0);
+	}
+}
+
+AudioPlayer.prototype.stopSource = function() {
+	if (!this.audioSource) {
+		return;
+	}
+
+	if (this.audioSource.stop) {
+		this.audioSource.stop(0);
+	} else if (this.audioSource.noteOff) {
+		this.audioSource.noteOff(0);
+	}
 }
 
 AudioPlayer.prototype.play = function() {
-	if (this.isStopped === false) { // Play the song the first time => everything is already loaded
-		// Start the Playback
-		this.audioSource.noteOn(0);
-		this.isPlaying = true;
-		
+	if (!this.audioContext) {
+		return;
+	}
+
+	var myself = this;
+	var beginPlayback = function() {
+		if (myself.isStopped === false) { // Play the song the first time => everything is already loaded
+			myself.startSource();
+			myself.isPlaying = true;
+		} else { // Recreate the source and begin playing
+			myself.addBufferToSource(myself.audioBuffer);
+			myself.createAudio();
+			myself.startSource();
+			myself.isPlaying = true;
+			myself.isStopped = false;
+		}
+
 		console.log("Playing the file");
-		
-		$("#btnPlay").attr("disabled", true);
-		$("#btnStop").attr("disabled", false);
-	} else { // Recreate the source and begin playing
-		this.addBufferToSource(this.audioBuffer);
-		this.createAudio();
-		
-		// Start the Playback
-		this.audioSource.noteOn(0);
-		this.isPlaying = true;
-		
-		console.log("Playing the file");
-		
-		$("#btnPlay").attr("disabled", true);
-		$("#btnStop").attr("disabled", false);
-		this.isStopped = false;
+		setButtonDisabled("btnPlay", true);
+		setButtonDisabled("btnStop", false);
+	};
+
+	if (this.audioContext.state === "suspended" && this.audioContext.resume) {
+		this.audioContext.resume().then(beginPlayback).catch(function(err) {
+			console.error("Could not resume audio context.", err);
+		});
+	} else {
+		beginPlayback();
 	}
 }
 
@@ -203,17 +290,16 @@ AudioPlayer.prototype.play = function() {
  */
 AudioPlayer.prototype.stop = function() {
 	if (this.isPlaying === true) {
-		this.audioSource.noteOff(0);
+		this.stopSource();
 		this.isPlaying = false;
 		this.isStopped = true;
 		
 		console.log("Playing the file");
 	
-		$("#btnStop").attr("disabled", true);
-		$("#btnPlay").attr("disabled", false);
-		//$("#btnLoad").attr("disabled", false);
+		setButtonDisabled("btnStop", true);
+		setButtonDisabled("btnPlay", false);
 	} else {
-		//$('#debug').text("player is not playing");
+		// player is not playing
 	}
 }
 
@@ -279,12 +365,12 @@ AudioPlayer.prototype.getTransformedTimeDomainData = function(k, min, max) {
 AudioPlayer.prototype.transformArray = function(array, k, min, max) {
 	// The transform ratio 
 	var transRatio = k/array.length;
-	transArray = new Float32Array(k);
+	var transArray = new Float32Array(k);
 	
 	var idx, gain;
 	var arrLen = array.length;
 	for (var i=0; i < array.length; i++) {
-		idx = Math.round(i*transRatio);
+		idx = Math.min(k - 1, Math.round(i*transRatio));
 		gain = (3*i*i)/(arrLen*arrLen);
 		transArray[idx] += array[i] + array[i] * gain;
 	}
@@ -295,12 +381,12 @@ AudioPlayer.prototype.transformArray = function(array, k, min, max) {
 AudioPlayer.prototype.transformArrayWithGain = function(array, k, gainval, min, max) {
 	// The transform ratio 
 	var transRatio = k/array.length;
-	transArray = new Float32Array(k);
+	var transArray = new Float32Array(k);
 	
 	var idx, gain;
 	var arrLen = array.length;
 	for (var i=0; i < array.length; i++) {
-		idx = Math.round(i*transRatio);
+		idx = Math.min(k - 1, Math.round(i*transRatio));
 		gain = (gainval*i*i)/(arrLen*arrLen);
 		transArray[idx] += array[i] + array[i] * gain;
 	}
@@ -382,7 +468,7 @@ AudioPlayer.prototype.renderFreqHist = function() {
 	
 	var freqCnt = freqData.length;
 	
-	binW = canW/freqCnt;
+	var binW = canW/freqCnt;
 	
 	this.canvasCtx.fillStyle = "black";
 	

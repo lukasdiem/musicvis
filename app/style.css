@@ -1,4 +1,6 @@
 
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap");
+
 /*
 Design by Free CSS Templates
 http://www.freecsstemplates.org
@@ -9,7 +11,7 @@ body {
 	margin: 0;
 	padding: 0;
 	background: #FFFFFF;
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: "Manrope", "Segoe UI", sans-serif;
 	font-size: 14px;
 	color: #3B3B3B;
 }
@@ -19,7 +21,7 @@ h1, h2, h3 {
 	padding: 0px;
 	letter-spacing: -2px;
 	text-transform: uppercase;
-	font-family: 'Arvo', serif;
+	font-family: "Space Grotesk", "Segoe UI", sans-serif;
 	font-weight: normal;
 	color: #0285CE;
 }
@@ -98,7 +100,7 @@ a:hover {
 	margin: 0px;
 	padding: 0px;
 	text-transform: uppercase;
-	font-family: 'Arvo', serif;
+	font-family: "Space Grotesk", "Segoe UI", sans-serif;
 	color: #3B3B3B;
 }
 
@@ -393,4 +395,323 @@ a:hover {
 #banner {
 	width: 1000px;
 	margin: 0px auto;
+}
+
+:root {
+	--bg: #f4f7fb;
+	--bg-gradient-a: #f2f7ff;
+	--bg-gradient-b: #eef3f9;
+	--surface: #ffffff;
+	--surface-elevated: #f8fbff;
+	--text: #1a2433;
+	--muted: #5b6b81;
+	--border: #d8e1ee;
+	--accent: #4a7dff;
+	--accent-strong: #254fe0;
+	--accent-soft: rgba(74, 125, 255, 0.16);
+	--menu-bg: #ffffffcc;
+	--menu-active: #2f88ff;
+	--menu-active-text: #ffffff;
+	--shadow: 0 14px 30px rgba(20, 38, 76, 0.1);
+	--control-bg: #ffffff;
+	--input-bg: #f8fbff;
+	--footer-bg: #eaf0f7;
+	--footer-border: #d5deea;
+	--footer-text: #64748b;
+	--focus: 0 0 0 3px rgba(47, 136, 255, 0.3);
+}
+
+html[data-theme="dark"] {
+	--bg: #0f141d;
+	--bg-gradient-a: #0f1730;
+	--bg-gradient-b: #0b1020;
+	--surface: #161f2d;
+	--surface-elevated: #1b283a;
+	--text: #e7edf7;
+	--muted: #99abc3;
+	--border: #2a3850;
+	--accent: #ff7bc4;
+	--accent-strong: #ff4ea7;
+	--accent-soft: rgba(255, 123, 196, 0.24);
+	--menu-bg: #121a27cc;
+	--menu-active: #ff67b5;
+	--menu-active-text: #0b1522;
+	--shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
+	--control-bg: #182437;
+	--input-bg: #101a29;
+	--footer-bg: #111a28;
+	--footer-border: #26344a;
+	--footer-text: #90a4bf;
+	--focus: 0 0 0 3px rgba(255, 123, 196, 0.35);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	background: radial-gradient(circle at 10% 0%, var(--bg-gradient-a), var(--bg-gradient-b) 68%);
+	color: var(--text);
+	font-family: "Manrope", "Segoe UI", sans-serif;
+	transition: background 220ms ease, color 220ms ease;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: "Space Grotesk", "Segoe UI", sans-serif;
+	color: var(--text);
+	letter-spacing: -0.02em;
+	text-transform: none;
+}
+
+a {
+	color: var(--accent-strong);
+	transition: color 160ms ease;
+}
+
+a:hover {
+	color: var(--accent);
+}
+
+#header,
+#menu,
+#banner,
+#page {
+	max-width: 1080px;
+	width: calc(100% - 40px);
+}
+
+#logo h1 {
+	font-size: clamp(2.3rem, 4.5vw, 3.4rem);
+	font-weight: 700;
+	color: var(--text);
+}
+
+#logo h2 {
+	font-size: clamp(1rem, 2.1vw, 1.3rem);
+	font-family: "Manrope", "Segoe UI", sans-serif;
+	font-weight: 400;
+	color: var(--muted);
+}
+
+#menu-wrapper {
+	height: auto;
+	background: transparent;
+	padding: 8px 0 0;
+}
+
+#menu ul {
+	display: flex;
+	gap: 10px;
+	padding: 0;
+	margin: 0;
+	flex-wrap: wrap;
+}
+
+#menu li {
+	float: none;
+	border-right: none;
+	border-radius: 999px;
+	overflow: hidden;
+	background: var(--menu-bg);
+	backdrop-filter: blur(8px);
+	border: 1px solid var(--border);
+	box-shadow: var(--shadow);
+}
+
+#menu a {
+	line-height: 1;
+	padding: 12px 18px;
+	font-size: 0.86rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text);
+}
+
+#menu a:hover,
+#menu .current_page_item a {
+	background: var(--menu-active);
+	color: var(--menu-active-text);
+}
+
+#banner {
+	padding: 10px 0 22px;
+}
+
+#controlBar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px;
+	padding: 14px;
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	background: var(--surface);
+	box-shadow: var(--shadow);
+	margin-bottom: 14px;
+}
+
+#playerControls {
+	display: flex;
+	gap: 10px;
+}
+
+.controlGroup {
+	display: grid;
+	gap: 6px;
+	min-width: 170px;
+	font-size: 0.8rem;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+}
+
+.controlSlider {
+	min-width: 220px;
+	flex: 1;
+}
+
+.controlLabel {
+	font-weight: 700;
+}
+
+input[type="button"],
+button,
+select {
+	border: 1px solid var(--border);
+	background: var(--control-bg);
+	color: var(--text);
+	border-radius: 12px;
+	font-family: "Manrope", "Segoe UI", sans-serif;
+	font-size: 0.92rem;
+	padding: 10px 14px;
+	transition: transform 130ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+input[type="button"]:hover,
+button:hover,
+select:hover {
+	border-color: var(--accent);
+	transform: translateY(-1px);
+}
+
+input[type="button"]:disabled,
+button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	transform: none;
+}
+
+input[type="range"] {
+	width: 100%;
+	accent-color: var(--accent);
+	background: transparent;
+}
+
+#themeToggle {
+	margin-left: auto;
+	font-weight: 700;
+	background: linear-gradient(130deg, var(--accent-soft), transparent);
+}
+
+#errorConsole {
+	min-height: 1.3em;
+	margin: 8px 0 12px;
+	color: #c0392b;
+	font-weight: 700;
+}
+
+#container {
+	width: 100%;
+	height: min(65vw, 620px);
+	min-height: 360px;
+	border-radius: 16px;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	box-shadow: var(--shadow);
+	background: radial-gradient(circle at 30% 20%, #1f2f52, #0a1020 72%);
+}
+
+html[data-theme="dark"] #container {
+	background: radial-gradient(circle at 28% 18%, #1f2f70, #0a0f20 70%);
+}
+
+#page {
+	padding: 26px 0;
+	background: transparent;
+}
+
+.post {
+	padding: 24px;
+	margin-bottom: 18px;
+	border-radius: 18px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	box-shadow: var(--shadow);
+}
+
+.post .title {
+	height: auto;
+	padding: 0;
+	margin-bottom: 14px;
+	font-size: clamp(1.5rem, 2.5vw, 2rem);
+	color: var(--text);
+}
+
+.post .entry {
+	color: var(--text);
+	font-size: 1rem;
+	line-height: 1.8;
+}
+
+#footer {
+	margin-top: 20px;
+	height: auto;
+	padding: 16px 10px 20px;
+	background: var(--footer-bg);
+	border-top: 1px solid var(--footer-border);
+}
+
+#footer p {
+	padding-top: 0;
+	color: var(--footer-text);
+	letter-spacing: 0.08em;
+	font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+input:focus-visible,
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+	outline: none;
+	box-shadow: var(--focus);
+}
+
+@media (max-width: 900px) {
+	#header,
+	#menu,
+	#banner,
+	#page {
+		width: calc(100% - 24px);
+	}
+
+	#controlBar {
+		padding: 12px;
+		gap: 10px;
+	}
+
+	#themeToggle {
+		margin-left: 0;
+	}
+
+	#container {
+		height: min(72vw, 520px);
+		min-height: 300px;
+	}
+
+	.post {
+		padding: 18px;
+	}
 }

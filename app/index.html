@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!doctype html>
 <!--
 Design by Free CSS Templates
 http://www.freecsstemplates.org
@@ -15,24 +15,13 @@ Released   : 20120528
 	<meta name="keywords" content="" />
 	<meta name="description" content="" />
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-	<link href="http://fonts.googleapis.com/css?family=Arvo" rel="stylesheet" type="text/css" />
-	<link href="http://fonts.googleapis.com/css?family=Coda:400,800" rel="stylesheet" type="text/css" />
+	<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" type="text/css" />
 	<link href="style.css" rel="stylesheet" type="text/css" media="screen" />
-	
-	<script type="text/javascript" src="build/Three.js"></script>
-	<script type="text/javascript" src="shaders.js"></script>
-	<script type="text/javascript" src="mhbModel.js"></script>
-	<script type="text/javascript" src="fileLoader.js"></script>
-	<script type="text/javascript" src="main.js"></script>
-	
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script type="text/javascript" src="mainAudio.js"></script>
-	<script type="text/javascript" src="audioPlayer.js"></script>
 
 	<title>MusicVis</title>
 </head>
 
-<body onload="main()">
+<body>
 
 <div id="header-wrapper">
 	<div id="header">
@@ -44,7 +33,8 @@ Released   : 20120528
 </div>
 
 <!-- Automaticylly add the menu here!!! -->
-<script src="menuCreator.js" type="text/javascript"></script>
+<div id="menu-root"></div>
+<script type="module" src="menuCreator.js"></script>
 
 <!--
 <div id="menu-wrapper">
@@ -60,20 +50,32 @@ Released   : 20120528
 
 <div id="banner">
 	<br>
-	<div id="playerControls">
-        	<!--<input id="btnLoad" type="button" name="btnLoad" value="Load" onclick="myAudioPlayer.loadSampleAudio()">-->
-        	<input id="btnPlay" type="button" name="btnPlay" value="Play" disabled="true" onclick="myAudioPlayer.play()">
-        	<input id="btnStop" type="button" name="btnStop" value="Stop" disabled="true" onclick="myAudioPlayer.stop()">
+	<div id="controlBar" role="toolbar" aria-label="Music visualizer controls">
+		<div id="playerControls">
+			<input id="btnPlay" type="button" name="btnPlay" value="Play" disabled="true">
+			<input id="btnStop" type="button" name="btnStop" value="Stop" disabled="true">
+		</div>
+		<label class="controlGroup" for="selModel">
+			<span class="controlLabel">Model</span>
+			<select id="selModel">
+				<option value="head">Head</option>
+				<option value="homer">Homer</option>
+				<option value="eight">Eight</option>
+			</select>
+		</label>
+		<label class="controlGroup" for="selMode">
+			<span class="controlLabel">Render Mode</span>
+			<select id="selMode">
+				<option value="manifold" selected>Legacy Manifold</option>
+				<option value="procedural">Procedural</option>
+			</select>
+		</label>
+		<label class="controlGroup controlSlider" for="gainSlider">
+			<span class="controlLabel">High Frequency Gain</span>
+			<input id="gainSlider" type="range" min="0" max="15" value="3" step="1"/>
+		</label>
+		<button id="themeToggle" type="button" aria-label="Switch color mode">Dark Mode</button>
 	</div>
-	
-	Select Model:
-	<select id="selModel" onchange="changeModel(this);">
-		<option value="head">Head</option>
-		<option value="homer">Homer</option>
-		<option value="eight">Eight</option>
-	</select>
-	High Frequenciy Gain:
-	<input type="range" min="0" max="15" value="3" step="1" onchange="gainHighFreq = this.value;"/>
     
 	<p id="errorConsole"></p>  
 
@@ -113,7 +115,7 @@ Released   : 20120528
 						<div class="entry">
 							<p>The goal of our Visualization exercise was to build a Music Visualization application that deforms a 3D-Mesh according to the music. This Web-Application relies primarily on WebGL and other new technologies and frameworks. 
 							It was developed with Google Chrome, which supports all the libraries and is not tested on other browsers.  (see <a href="#techDet">Technical Details</a>).</p>
-							<h4>What’s the benefit of this app?</h4>
+							<h4>Whatï¿½s the benefit of this app?</h4>
 							<p>The whole application is more or less just for fun. It generates interesting images according to a piece of music, similar to music visualization in popular music software.</p>
 							<h4>Why are we doing this?</h4>
 							<p>This application is written during an exercise for the Visualization class at the <a href="http://www.tuwien.ac.at/">Vienna University of Technology</a>. 
@@ -130,7 +132,7 @@ Released   : 20120528
 									<li><a href="http://www.khronos.org/webgl/">WebGL</a> - Used to Render the stuff</li>
 									<li><a href="https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html">Web Audio API</a> - Play and process the Music</li>
 									<li><a href="https://github.com/mrdoob/three.js/">Three.js</a> - Lightweight 3D Library (Makes the life a lot easier when using WebGL)</li>
-									<li><a href="http://jquery.com">jQuery</a> - Javascirpt Framework to simplify the HTML document traversing and much more.</li>
+									<li>Native DOM APIs - Used for UI interactions and event handling.</li>
 								</ul>
 							The Web Audio API as we use it can only play songs within the Webbrowser Chrome, because other Browser implement the API differently or does not support this API at all.
 							As well as there are many limitations when WebGL is used to render the stuff. By now many nice Features of new OpenGL versions are missing in WebGL and special "hacks" were
@@ -178,5 +180,6 @@ Released   : 20120528
 	<p>2012. MusicVis - All rights reserved - Design by <a href="http://www.freecsstemplates.org/"> free CSS Templates</a>.</p>
 </div>
 <!-- end #footer -->
+<script type="module" src="modernMain.js"></script>
 </body>
 </html>

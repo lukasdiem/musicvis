@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (keep example files tracked)
+.env
+.env.local
+.env.*.local
+
+# Coverage and cache
+coverage/
+.cache/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/

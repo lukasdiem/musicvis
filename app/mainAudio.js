@@ -55,7 +55,7 @@ function onDocumentDrop(evt) {
 	evt.stopPropagation();
 	evt.preventDefault();
 	
-	//$('#loading').text("loading...");
+	// loading...
 
 	var droppedFiles = evt.dataTransfer.files;
 
