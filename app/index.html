@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Name       : Classifieds  
+Description: A two-column, fixed-width design with dark color scheme.
+Version    : 1.0
+Released   : 20120528
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<link href="http://fonts.googleapis.com/css?family=Arvo" rel="stylesheet" type="text/css" />
+	<link href="http://fonts.googleapis.com/css?family=Coda:400,800" rel="stylesheet" type="text/css" />
+	<link href="style.css" rel="stylesheet" type="text/css" media="screen" />
+	
+	<script type="text/javascript" src="build/Three.js"></script>
+	<script type="text/javascript" src="shaders.js"></script>
+	<script type="text/javascript" src="mhbModel.js"></script>
+	<script type="text/javascript" src="fileLoader.js"></script>
+	<script type="text/javascript" src="main.js"></script>
+	
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script type="text/javascript" src="mainAudio.js"></script>
+	<script type="text/javascript" src="audioPlayer.js"></script>
+
+	<title>MusicVis</title>
+</head>
+
+<body onload="main()">
+
+<div id="header-wrapper">
+	<div id="header">
+		<div id="logo">
+			<h1><a href="#banner">Music Vis</a></h1>
+			<h2><a href="http://www.cg.tuwien.ac.at/courses/Visualisierung2/">VU - Visualisierung 2</a></h2>
+		</div>
+	</div>
+</div>
+
+<!-- Automaticylly add the menu here!!! -->
+<script src="menuCreator.js" type="text/javascript"></script>
+
+<!--
+<div id="menu-wrapper">
+	<div id="menu">
+		<ul>
+			<li class="current_page_item"><a href="#">main</a></li>
+			<li><a href="#">sourcecode</a></li>
+			<li><a href="#">About</a></li>
+		</ul>
+	</div>
+</div>
+-->
+
+<div id="banner">
+	<br>
+	<div id="playerControls">
+        	<!--<input id="btnLoad" type="button" name="btnLoad" value="Load" onclick="myAudioPlayer.loadSampleAudio()">-->
+        	<input id="btnPlay" type="button" name="btnPlay" value="Play" disabled="true" onclick="myAudioPlayer.play()">
+        	<input id="btnStop" type="button" name="btnStop" value="Stop" disabled="true" onclick="myAudioPlayer.stop()">
+	</div>
+	
+	Select Model:
+	<select id="selModel" onchange="changeModel(this);">
+		<option value="head">Head</option>
+		<option value="homer">Homer</option>
+		<option value="eight">Eight</option>
+	</select>
+	High Frequenciy Gain:
+	<input type="range" min="0" max="15" value="3" step="1" onchange="gainHighFreq = this.value;"/>
+    
+	<p id="errorConsole"></p>  
+
+	<!-- WebGL container -->
+	<div id="container">
+		<!-- Into this container the WebGL content is loaded!!
+			 DO NOT DELETE IT!!!! -->
+	</div>  
+</div>
+
+<!-- end #header -->
+
+<div id="wrapper">
+	<div id="page">
+		<div id="page-bgtop">
+			<div id="page-bgbtm">
+				<div id="content">
+					<div class="post">
+						<h2 class="title">Instructions</h2>
+						<div style="clear: both;">&nbsp;</div>
+						<div class="entry">
+							<p> You can use following buttons to interact with the MusicVis:
+								<ul>
+									<li>Left Mouse Button: Rotate the object</li>
+									<li>Right Mouse Button: Translate the object</li>
+									<li>Middle Mouse Button: Zoom in/out</li>
+									<li>Gain Highy Frequency Slider: Changes the gain factor of the mapping function, such that the higher frequencies are gained a little bit.</li>
+									<li>Play Button: Starts the music playback</li>
+									<li>Stop Button: Stops the music playback</li>
+									<li>Drop *.mp3 Files into the window and they will be loaded in background. If they are ready the music playback stops and you have to press play.</li>
+								</ul>
+							</p>
+						</div>
+						
+						<h2 class="title">Short Descripton</h2>
+						<div style="clear: both;">&nbsp;</div>
+						<div class="entry">
+							<p>The goal of our Visualization exercise was to build a Music Visualization application that deforms a 3D-Mesh according to the music. This Web-Application relies primarily on WebGL and other new technologies and frameworks. 
+							It was developed with Google Chrome, which supports all the libraries and is not tested on other browsers.  (see <a href="#techDet">Technical Details</a>).</p>
+							<h4>What�s the benefit of this app?</h4>
+							<p>The whole application is more or less just for fun. It generates interesting images according to a piece of music, similar to music visualization in popular music software.</p>
+							<h4>Why are we doing this?</h4>
+							<p>This application is written during an exercise for the Visualization class at the <a href="http://www.tuwien.ac.at/">Vienna University of Technology</a>. 
+							More specific the course is held by the <a href="http://www.cg.tuwien.ac.at/">CG-Institute</a> and you can find the course page 
+							<a href="http://www.cg.tuwien.ac.at/courses/Visualisierung2/">here</a>.</p>
+						</div>
+						
+						<h2 id="techDet" class="title">Technical Details</h2>
+						<div style="clear: both;">&nbsp;</div>
+						<div class="entry">
+							<h4>Used Frameworks</h4>
+							<p>The rendering application is written in Javascript and HTML5. And uses the following APIs and Frameworks:
+								<ul>
+									<li><a href="http://www.khronos.org/webgl/">WebGL</a> - Used to Render the stuff</li>
+									<li><a href="https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html">Web Audio API</a> - Play and process the Music</li>
+									<li><a href="https://github.com/mrdoob/three.js/">Three.js</a> - Lightweight 3D Library (Makes the life a lot easier when using WebGL)</li>
+									<li><a href="http://jquery.com">jQuery</a> - Javascirpt Framework to simplify the HTML document traversing and much more.</li>
+								</ul>
+							The Web Audio API as we use it can only play songs within the Webbrowser Chrome, because other Browser implement the API differently or does not support this API at all.
+							As well as there are many limitations when WebGL is used to render the stuff. By now many nice Features of new OpenGL versions are missing in WebGL and special "hacks" were
+							needed to get the application running.</p>
+							
+							<h4>Under the hood</h4>
+							<p>To deform a 3D-mesh like MusicVis does it, some math is needed. The whole idea is based on Spectral Geometry processing. It was not our idea how to
+							do all the stuff and the original paper describing the algorithms as we implemented them is "Stereo music visualization trhough manifold harmonics" by T. Lewiner et al. 
+							Another good reading is "Spectral Geometry processing with Manifold Harmonics" by B. Vallet and B. Lévy on which the first paper is based more or less.</p>
+							<p>Now we are getting to the interesting part. How the whole thing works. This can be described by following steps:
+								<ul>
+									<li>Preprocessing: Calculate the so called Manifold Harmonics Basis (MHB) of the mesh (we used MATLAB to calculate this part)</li>
+									<li>Rendering-Preprocessing: Calculate the Manifold harmonics Transform (MHT) on the original mesh to get the transformed vertices 
+										(this transforms the vertices from the geometric space to the frequency space). This is also a preprocessing step, but now done in the real application using JavaScript.</li>
+									<li>Audio-Processing: Get the frequencies of the played music. These frequencies are than mapped to the frequencies of the mesh (we use a linear mapping by now).</li>
+									<li>Rendering: Calculate the inverse MHT to get back into the geometric space, but before this is done the Audio-Frequencies are multiplied to the
+										transformed vertices. This multiplication results in the transformation of the vertices if they are transformed back to the geometric space.
+										This whole processing step is written as Vertex-Shader to get a realtime performance of the application.</li>
+								</ul>
+							I think this short description is not enough to really understand how the whole system works, but please feel free to read the papers and/or our sourcecode.
+							</p>
+							
+						</div>
+						
+						<h2 class="title">References</h2>
+						<div style="clear: both;">&nbsp;</div>
+						<div class="entry">
+							<p>
+								<ul>
+									<li><a href="http://alice.loria.fr/index.php/publications.html?Paper=ManifoldHarmonics@2008">Project Page</a> of "Spectral Geometry Processing through Manifold Harmonic" by Bruno Vallet and Bruno Lévy with Demo and Paper</li>
+									<li><a href="http://www.matmidia.mat.puc-rio.br/tomlew/publication_page.php?pubkey=stereomh_tvc">Homepage</a> with the paper "Stereo music visualization through manifold harmonics" by T. Lewiner et al. with some additional information.</li>
+									<li><a href="http://ddg.cs.columbia.edu/">Discrete Differential Geometry Forum</a> page with nice tutorials and papers (helped to understand the Discrete Exterior Calculus (DEC)).</li>
+								</ul>
+							</p>
+						</div>
+					</div>					
+				</div>
+				<!-- end #content -->
+			</div>
+		</div>
+	</div>
+	<!-- end #page -->
+</div>
+<div id="footer">
+	<p>2012. MusicVis - All rights reserved - Design by <a href="http://www.freecsstemplates.org/"> free CSS Templates</a>.</p>
+</div>
+<!-- end #footer -->
+</body>
+</html>
