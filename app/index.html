@@ -28,14 +28,16 @@ Released   : 20120528
 		<div id="logo">
 			<h1><a href="#banner">Music Vis</a></h1>
 			<h2><a href="http://www.cg.tuwien.ac.at/courses/Visualisierung2/">VU - Visualisierung 2</a></h2>
+			<h3>MusicVis - A WebGL Music Visualizer by Daniel P. & Lukas D. (2012)</h3>
 		</div>
 	</div>
 </div>
 
 <!-- Automaticylly add the menu here!!! -->
+<!--
 <div id="menu-root"></div>
 <script type="module" src="menuCreator.js"></script>
-
+-->
 <!--
 <div id="menu-wrapper">
 	<div id="menu">
@@ -75,6 +77,10 @@ Released   : 20120528
 			<input id="gainSlider" type="range" min="0" max="15" value="3" step="1"/>
 		</label>
 		<button id="themeToggle" type="button" aria-label="Switch color mode">Dark Mode</button>
+		<div id="content">
+			<p><b>Drop your music here to play</b></p>
+			<p>Music by Viacheslav Starostin from Pixabay</p>
+		</div>
 	</div>
     
 	<p id="errorConsole"></p>  
@@ -127,16 +133,16 @@ Released   : 20120528
 						<div style="clear: both;">&nbsp;</div>
 						<div class="entry">
 							<h4>Used Frameworks</h4>
-							<p>The rendering application is written in Javascript and HTML5. And uses the following APIs and Frameworks:
-								<ul>
-									<li><a href="http://www.khronos.org/webgl/">WebGL</a> - Used to Render the stuff</li>
-									<li><a href="https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html">Web Audio API</a> - Play and process the Music</li>
-									<li><a href="https://github.com/mrdoob/three.js/">Three.js</a> - Lightweight 3D Library (Makes the life a lot easier when using WebGL)</li>
-									<li>Native DOM APIs - Used for UI interactions and event handling.</li>
-								</ul>
-							The Web Audio API as we use it can only play songs within the Webbrowser Chrome, because other Browser implement the API differently or does not support this API at all.
-							As well as there are many limitations when WebGL is used to render the stuff. By now many nice Features of new OpenGL versions are missing in WebGL and special "hacks" were
-							needed to get the application running.</p>
+							<p>The current version of MusicVis is written in modern JavaScript and HTML5 and uses the following APIs and frameworks:</p>
+							<ul>
+								<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API">WebGL</a> - GPU rendering backend used through Three.js.</li>
+								<li><a href="https://threejs.org/">Three.js</a> - Scene setup, meshes, cameras, controls, shaders, particles, and post-processing.</li>
+								<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API">Web Audio API</a> - Audio playback and frequency analysis that drive the mesh deformation and visual effects.</li>
+								<li><a href="https://vite.dev/">Vite</a> - Development server, asset handling, and production build pipeline.</li>
+								<li>GLSL shaders - Custom vertex and fragment shaders for manifold reconstruction, animated backgrounds, and particles.</li>
+								<li>Native DOM APIs - UI wiring, drag and drop audio loading, theme switching, and control handling.</li>
+							</ul>
+							<p>The application runs best in current Chromium-based browsers, but it no longer depends on Chrome-only behavior. WebGL and Web Audio still impose some platform-specific limitations, especially around performance, audio autoplay policies, and floating-point texture support.</p>
 							
 							<h4>Under the hood</h4>
 							<p>To deform a 3D-mesh like MusicVis does it, some math is needed. The whole idea is based on Spectral Geometry processing. It was not our idea how to
@@ -177,7 +183,7 @@ Released   : 20120528
 	<!-- end #page -->
 </div>
 <div id="footer">
-	<p>2012. MusicVis - All rights reserved - Design by <a href="http://www.freecsstemplates.org/"> free CSS Templates</a>.</p>
+	<p>2012. MusicVis - All rights reserved</p>
 </div>
 <!-- end #footer -->
 <script type="module" src="modernMain.js"></script>

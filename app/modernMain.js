@@ -7,6 +7,9 @@ import headVectorsUrl from "./models/head_vectors.mhb?url";
 import homerVectorsUrl from "./models/homer_vectors.mhb?url";
 import eightVectorsUrl from "./models/eight_vectors.mhb?url";
 import sampleAudioUrl from "./audio/test.mp3?url";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 const NUM_HARMONICS = 50;
 
@@ -107,6 +110,131 @@ void main(void) {
 }
 `;
 
+const BG_VERTEX_SHADER = `
+varying vec2 vUv;
+void main() {
+	vUv = uv;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const BG_FRAGMENT_SHADER = `
+varying vec2 vUv;
+uniform float uTime;
+uniform float uAudioLow;
+uniform float uAudioMid;
+uniform float uAudioHigh;
+
+float hash(vec2 p) {
+	p = fract(p * vec2(127.1, 311.7));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(
+		mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+		mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+		f.y
+	);
+}
+
+float fbm(vec2 p) {
+	float v = 0.0;
+	float amp = 0.5;
+	for (int i = 0; i < 5; i++) {
+		v += noise(p) * amp;
+		p = p * 2.1 + vec2(1.7, 9.2);
+		amp *= 0.5;
+	}
+	return v;
+}
+
+void main() {
+	float t = uTime * 0.07;
+	vec2 uv = vUv;
+
+	float n1 = fbm(uv * 3.0 + vec2(t, t * 0.6));
+	float n2 = fbm(uv * 5.0 - vec2(t * 0.5, t * 0.9) + vec2(n1 * 0.5));
+	float n3 = fbm(uv * 2.5 + vec2(n2 * 0.4) + vec2(-t * 0.3, t * 0.4));
+
+	vec3 dark   = vec3(0.01, 0.008, 0.04);
+	vec3 purple = vec3(0.16, 0.03, 0.32);
+	vec3 blue   = vec3(0.02, 0.06, 0.28);
+	vec3 pink   = vec3(0.30, 0.04, 0.20);
+
+	vec3 col = dark;
+	col = mix(col, purple, smoothstep(0.3, 0.8, n1 * n3));
+	col = mix(col, blue,   smoothstep(0.4, 0.9, n2 * n1));
+	col += pink * n3 * n1 * 0.6;
+
+	col += purple * uAudioLow  * 0.8 * smoothstep(0.5, 1.0, n3);
+	col += blue   * uAudioMid  * 0.5 * smoothstep(0.4, 1.0, n1);
+	col += vec3(0.4, 0.15, 0.5) * uAudioHigh * 0.3 * n2;
+
+	gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const PARTICLE_VERTEX_SHADER = `
+attribute float aRandom;
+uniform float uTime;
+uniform float uAudioLow;
+uniform float uAudioHigh;
+uniform float uPixelRatio;
+
+varying float vRandom;
+varying float vBrightness;
+
+void main() {
+	vRandom = aRandom;
+
+	float t = uTime * (0.08 + aRandom * 0.12);
+	float orbitAngle = aRandom * 6.28318 + t;
+	float xzRadius = length(position.xz);
+
+	vec3 pos = position;
+	pos.x += sin(orbitAngle) * 0.12 * xzRadius;
+	pos.y += cos(uTime * 0.15 + aRandom * 6.28318) * 0.18;
+	pos.z += cos(orbitAngle) * 0.12 * xzRadius;
+
+	vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+	float audioExpand = 1.0 + uAudioLow * 2.5 * (0.5 + aRandom * 0.5);
+	float sz = (1.5 + aRandom * 3.5) * audioExpand * uPixelRatio * (280.0 / -mvPos.z);
+	gl_PointSize = clamp(sz, 1.0, 20.0);
+
+	vBrightness = 0.4 + uAudioHigh * 0.6 * aRandom;
+	gl_Position = projectionMatrix * mvPos;
+}
+`;
+
+const PARTICLE_FRAGMENT_SHADER = `
+varying float vRandom;
+varying float vBrightness;
+uniform float uTheme;
+
+void main() {
+	vec2 uv = gl_PointCoord - 0.5;
+	float d = length(uv);
+	if (d > 0.5) discard;
+
+	float alpha = (1.0 - d * 2.0);
+	alpha = alpha * alpha * vBrightness;
+
+	vec3 darkCol1  = vec3(0.85, 0.35, 1.0);
+	vec3 darkCol2  = vec3(0.15, 0.65, 1.0);
+	vec3 lightCol1 = vec3(0.04, 0.22, 0.82);
+	vec3 lightCol2 = vec3(0.02, 0.50, 0.42);
+	vec3 col1 = mix(lightCol1, darkCol1, uTheme);
+	vec3 col2 = mix(lightCol2, darkCol2, uTheme);
+
+	gl_FragColor = vec4(mix(col1, col2, vRandom), alpha);
+}
+`;
+
 class ModernMusicVisApp {
 	constructor() {
 		this.container = document.getElementById("container");
@@ -139,6 +267,17 @@ class ModernMusicVisApp {
 
 		this.gainHighFreq = Number(this.gainSlider.value || 3);
 		this.deformationMode = this.modeSelect ? this.modeSelect.value : "manifold";
+
+		this.composer = null;
+		this.bloomPass = null;
+		this.bgMesh = null;
+		this.particles = null;
+		this.ambientLight = null;
+		this.keyLight = null;
+		this.rimLight = null;
+		this.audioLow = 0;
+		this.audioMid = 0;
+		this.audioHigh = 0;
 	}
 
 	applyTheme(theme) {
@@ -178,7 +317,45 @@ class ModernMusicVisApp {
 			if (theme === "dark") {
 				this.renderer.setClearColor(0x090e1a, 1);
 			} else {
-				this.renderer.setClearColor(0xffffff, 1);
+				this.renderer.setClearColor(0xe8edf5, 1);
+			}
+		}
+
+		if (this.ambientLight && this.keyLight && this.rimLight) {
+			if (theme === "dark") {
+				this.ambientLight.color.setHex(0x101522);
+				this.ambientLight.intensity = 0.18;
+				this.keyLight.color.setHex(0xffc1dc);
+				this.keyLight.intensity = 0.7;
+				this.rimLight.color.setHex(0x6f8cff);
+				this.rimLight.intensity = 0.22;
+			} else {
+				this.ambientLight.color.setHex(0xffffff);
+				this.ambientLight.intensity = 0.55;
+				this.keyLight.color.setHex(0xffffff);
+				this.keyLight.intensity = 1.0;
+				this.rimLight.color.setHex(0x88aaff);
+				this.rimLight.intensity = 0.3;
+			}
+		}
+
+		if (this.bgMesh) {
+			this.bgMesh.visible = (theme === "dark");
+		}
+		if (this.particles) {
+			this.particles.visible = true;
+			const isDark = theme === "dark";
+			this.particles.material.uniforms.uTheme.value = isDark ? 1.0 : 0.0;
+			this.particles.material.blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
+		}
+		if (this.bloomPass) {
+			if (theme === "dark") {
+				this.bloomPass.enabled   = true;
+				this.bloomPass.strength  = 0.35;
+				this.bloomPass.radius    = 0.35;
+				this.bloomPass.threshold = 0.92;
+			} else {
+				this.bloomPass.enabled = false;
 			}
 		}
 
@@ -186,20 +363,26 @@ class ModernMusicVisApp {
 			if (this.mesh.material.isShaderMaterial && this.mesh.material.uniforms) {
 				if (theme === "dark") {
 					this.mesh.material.uniforms.uMatColor.value.set(1.0, 0.45, 0.73);
-					this.mesh.material.uniforms.uDirectionalColor.value.set(0.7, 0.55, 0.75);
-					this.mesh.material.uniforms.uAmbientColor.value.set(0.05, 0.05, 0.08);
+					this.mesh.material.uniforms.uDirectionalColor.value.set(0.28, 0.2, 0.32);
+					this.mesh.material.uniforms.uAmbientColor.value.set(0.02, 0.02, 0.035);
+					this.mesh.material.uniforms.uMatSpecularColor.value.set(0.16, 0.12, 0.18);
 				} else {
 					this.mesh.material.uniforms.uMatColor.value.set(0.2, 0.62, 1.0);
 					this.mesh.material.uniforms.uDirectionalColor.value.set(0.22, 0.45, 0.4);
 					this.mesh.material.uniforms.uAmbientColor.value.set(0.1, 0.1, 0.1);
+					this.mesh.material.uniforms.uMatSpecularColor.value.set(0.3, 0.6, 0.5);
 				}
 			} else if (this.mesh.material.color && this.mesh.material.emissive) {
 				if (theme === "dark") {
 					this.mesh.material.color.setHex(0xff67b5);
-					this.mesh.material.emissive.setHex(0x22081c);
+					this.mesh.material.emissive.setHex(0x12040e);
+					this.mesh.material.roughness = 0.52;
+					this.mesh.material.metalness = 0.08;
 				} else {
 					this.mesh.material.color.setHex(0x2c9bff);
 					this.mesh.material.emissive.setHex(0x000000);
+					this.mesh.material.roughness = 0.35;
+					this.mesh.material.metalness = 0.15;
 				}
 			}
 		}
@@ -226,7 +409,7 @@ class ModernMusicVisApp {
 	initRenderer() {
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 		this.renderer.setPixelRatio(window.devicePixelRatio || 1);
-		this.renderer.setClearColor(0xffffff, 1);
+		this.renderer.setClearColor(0xe8edf5, 1);
 		this.renderer.domElement.style.display = "block";
 		this.renderer.domElement.style.width = "100%";
 		this.renderer.domElement.style.height = "100%";
@@ -245,12 +428,22 @@ class ModernMusicVisApp {
 		this.controls.dampingFactor = 0.08;
 		this.controls.target.set(0, 0, 0);
 
-		const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-		const key = new THREE.DirectionalLight(0xffffff, 1.2);
-		key.position.set(3, 2, 4);
-		const rim = new THREE.DirectionalLight(0x88aaff, 0.5);
-		rim.position.set(-4, -1, -3);
-		this.scene.add(ambient, key, rim);
+		this.ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+		this.keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+		this.keyLight.position.set(3, 2, 4);
+		this.rimLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+		this.rimLight.position.set(-4, -1, -3);
+		this.scene.add(this.ambientLight, this.keyLight, this.rimLight);
+
+		this.initBackground();
+		this.initParticles();
+
+		const renderPass = new RenderPass(this.scene, this.camera);
+		const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 0.6, 0.5, 0.82);
+		this.bloomPass = bloomPass;
+		this.composer = new EffectComposer(this.renderer);
+		this.composer.addPass(renderPass);
+		this.composer.addPass(bloomPass);
 
 		this.onResize();
 		window.addEventListener("resize", () => this.onResize());
@@ -265,6 +458,64 @@ class ModernMusicVisApp {
 		this.renderer.setViewport(0, 0, width, height);
 		this.renderer.setScissor(0, 0, width, height);
 		this.renderer.setScissorTest(false);
+		if (this.composer) {
+			this.composer.setSize(width, height);
+		}
+	}
+
+	initBackground() {
+		const bgGeo = new THREE.SphereGeometry(100, 32, 32);
+		const bgMat = new THREE.ShaderMaterial({
+			side: THREE.BackSide,
+			depthWrite: false,
+			uniforms: {
+				uTime: { value: 0 },
+				uAudioLow: { value: 0 },
+				uAudioMid: { value: 0 },
+				uAudioHigh: { value: 0 }
+			},
+			vertexShader: BG_VERTEX_SHADER,
+			fragmentShader: BG_FRAGMENT_SHADER
+		});
+		this.bgMesh = new THREE.Mesh(bgGeo, bgMat);
+		this.bgMesh.visible = false;
+		this.scene.add(this.bgMesh);
+	}
+
+	initParticles() {
+		const COUNT = 2500;
+		const positions = new Float32Array(COUNT * 3);
+		const randoms = new Float32Array(COUNT);
+		for (let i = 0; i < COUNT; i++) {
+			const phi = Math.random() * Math.PI * 2;
+			const cosTheta = 2 * Math.random() - 1;
+			const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
+			const r = 1.8 + Math.random() * 3.5;
+			positions[i * 3]     = r * sinTheta * Math.cos(phi);
+			positions[i * 3 + 1] = r * cosTheta;
+			positions[i * 3 + 2] = r * sinTheta * Math.sin(phi);
+			randoms[i] = Math.random();
+		}
+		const geo = new THREE.BufferGeometry();
+		geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+		geo.setAttribute("aRandom", new THREE.BufferAttribute(randoms, 1));
+		const mat = new THREE.ShaderMaterial({
+			uniforms: {
+				uTime: { value: 0 },
+				uAudioLow: { value: 0 },
+				uAudioHigh: { value: 0 },
+				uPixelRatio: { value: window.devicePixelRatio || 1 },
+				uTheme: { value: 1.0 }
+			},
+			vertexShader: PARTICLE_VERTEX_SHADER,
+			fragmentShader: PARTICLE_FRAGMENT_SHADER,
+			transparent: true,
+			depthWrite: false,
+			blending: THREE.AdditiveBlending
+		});
+		this.particles = new THREE.Points(geo, mat);
+		this.particles.visible = false;
+		this.scene.add(this.particles);
 	}
 
 	createGeometryByName(name) {
@@ -826,14 +1077,41 @@ class ModernMusicVisApp {
 	}
 
 	updateMesh() {
-		if (!this.mesh) {
-			return;
-		}
-
 		const time = performance.now() * 0.001;
 
 		if (this.isPlaying && this.analyser) {
 			this.analyser.getByteFrequencyData(this.frequencyData);
+			const len = this.frequencyData.length;
+			const lowEnd = Math.floor(len * 0.1);
+			const midEnd = Math.floor(len * 0.4);
+			const highEnd = Math.floor(len * 0.8);
+			let low = 0, mid = 0, high = 0;
+			for (let i = 0; i < lowEnd; i++) low += this.frequencyData[i];
+			for (let i = lowEnd; i < midEnd; i++) mid += this.frequencyData[i];
+			for (let i = midEnd; i < highEnd; i++) high += this.frequencyData[i];
+			this.audioLow  = (low  / lowEnd)           / 255;
+			this.audioMid  = (mid  / (midEnd - lowEnd)) / 255;
+			this.audioHigh = (high / (highEnd - midEnd)) / 255;
+		} else {
+			this.audioLow  *= 0.9;
+			this.audioMid  *= 0.9;
+			this.audioHigh *= 0.9;
+		}
+
+		if (this.bgMesh) {
+			this.bgMesh.material.uniforms.uTime.value     = time;
+			this.bgMesh.material.uniforms.uAudioLow.value = this.audioLow;
+			this.bgMesh.material.uniforms.uAudioMid.value = this.audioMid;
+			this.bgMesh.material.uniforms.uAudioHigh.value = this.audioHigh;
+		}
+		if (this.particles) {
+			this.particles.material.uniforms.uTime.value     = time;
+			this.particles.material.uniforms.uAudioLow.value = this.audioLow;
+			this.particles.material.uniforms.uAudioHigh.value = this.audioHigh;
+		}
+
+		if (!this.mesh) {
+			return;
 		}
 
 		if (this.deformationMode === "manifold") {
@@ -879,7 +1157,7 @@ class ModernMusicVisApp {
 		requestAnimationFrame(() => this.animate());
 		this.updateMesh();
 		this.controls.update();
-		this.renderer.render(this.scene, this.camera);
+		this.composer.render();
 	}
 
 	start() {
